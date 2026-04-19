@@ -1,0 +1,98 @@
+# .gitignore for AlienApp (.NET, VS, VS Code, OS, test, logs)
+
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Rider
+.idea/
+*.sln.iml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Test results
+TestResults/
+*.trx
+*.log
+
+# ASP.NET secrets
+secrets.json
+appsettings.Development.json
+
+# Others
+*.swp
+*.bak
+*.tmp
+
+# Local tools
+/.tool/
+
+# Ignore node_modules if present
+node_modules/
+
+# --- Flutter ---
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-versions
+pubspec.lock
+build/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+android/.gradle/
+android/app/build/
+android/local.properties
+android/.idea/
+android/.settings/
+android/build/
+android/captures/
+android/gradle/
+android/key.properties
+android/*.iml
+*.iml
+.metadata
+
+# --- React (TypeScript) ---
+build/
+dist/
+coverage/
+*.log
+*.tsbuildinfo
+.env
+.env.*
+/.pnp
+.pnp.js
+/.yarn/cache
+/.yarn/unplugged
+/.yarn/build-state.yml
+/.yarn/install-state.gz
+/.yarn/patches
+/.yarn/releases
+/.yarn/plugins
+/.yarn/sdks
+/.yarn/versions
+/.eslintcache
+/.next
+.parcel-cache
+.turbo
+storybook-static/
+out/
