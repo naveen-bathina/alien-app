@@ -1,0 +1,134 @@
+name: Build AAB and Publish to GHCR
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'Flavor to build'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Restore Firebase Config (from GitHub Secrets)
+        if: env.GOOGLE_SERVICES_JSON_BASE64 != ''
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > android/app/google-services.json
+
+      - name: Restore Release Keystore (from GitHub Secrets)
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p android/app/keystore
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/keystore/release.keystore
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android App Bundle (AAB)
+        env:
+          FLAVOR: ${{ inputs.flavor || 'production' }}
+          ANDROID_KEYSTORE_PATH: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && 'keystore/release.keystore' || '' }}
+          ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD }}
+        run: |
+          flutter build appbundle \
+            --flavor "$FLAVOR" \
+            -t "lib/main_${FLAVOR}.dart"
+
+      - name: Locate AAB output
+        id: aab_path
+        run: |
+          AAB_FILE=$(find build/app/outputs/bundle -name "*.aab" | head -n 1)
+          if [ -z "$AAB_FILE" ]; then
+            echo "Error: No AAB file found!"
+            exit 1
+          fi
+          echo "Found AAB at: $AAB_FILE"
+          echo "file=$AAB_FILE" >> "$GITHUB_OUTPUT"
+          
+          # Package tag / version for GHCR
+          VERSION="${GITHUB_REF_NAME:-latest}"
+          SAFE_TAG=$(echo "$VERSION" | tr '/' '-')
+          echo "tag=$SAFE_TAG" >> "$GITHUB_OUTPUT"
+          
+          # Repository name in lowercase for GHCR
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/alien-app-aab"
+          echo "image=$(echo "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload AAB as GitHub Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ inputs.flavor || 'production' }}-release-aab
+          path: ${{ steps.aab_path.outputs.file }}
+          retention-days: 30
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package and Push AAB to GHCR (OCI Image / Artifact)
+        run: |
+          AAB_FILE="${{ steps.aab_path.outputs.file }}"
+          DEST_IMAGE="${{ steps.aab_path.outputs.image }}:${{ steps.aab_path.outputs.tag }}"
+          
+          WORKDIR=$(mktemp -d)
+          cp "$AAB_FILE" "$WORKDIR/app-release.aab"
+          
+          cat <<EOF > "$WORKDIR/Dockerfile"
+          FROM scratch
+          LABEL org.opencontainers.image.title="MyAlien Android App Bundle"
+          LABEL org.opencontainers.image.description="Android App Bundle (AAB) for MyAlien"
+          LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
+          COPY app-release.aab /app-release.aab
+          EOF
+          
+          docker build -t "$DEST_IMAGE" "$WORKDIR"
+          docker push "$DEST_IMAGE"
+          
+          # If pushed from main, also tag as latest
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            LATEST_IMAGE="${{ steps.aab_path.outputs.image }}:latest"
+            docker tag "$DEST_IMAGE" "$LATEST_IMAGE"
+            docker push "$LATEST_IMAGE"
+          fi
