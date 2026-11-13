@@ -2,6 +2,7 @@ import 'package:myalien/home/models/profile_model.dart';
 
 /// Interaction categories for matches and likes.
 enum MatchFilter {
+  all,
   mutuallyLiked,
   mutuallySuperliked,
   likedYou,

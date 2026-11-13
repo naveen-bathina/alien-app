@@ -10,7 +10,7 @@ enum MatchesStatus { initial, loading, loaded, error }
 class MatchesState extends Equatable {
   const MatchesState({
     this.status = MatchesStatus.initial,
-    this.selectedFilter = MatchFilter.mutuallyLiked,
+    this.selectedFilter = MatchFilter.all,
     this.searchQuery = '',
     this.entries = const [],
     this.errorMessage,
@@ -55,6 +55,8 @@ class MatchesState extends Equatable {
   List<MatchEntry> get visibleEntries {
     List<MatchEntry> list;
     switch (selectedFilter) {
+      case MatchFilter.all:
+        list = entries;
       case MatchFilter.mutuallyLiked:
         list = mutuallyLikedMatches;
       case MatchFilter.mutuallySuperliked:
@@ -99,18 +101,18 @@ class MatchesState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        selectedFilter,
-        searchQuery,
-        entries,
-        errorMessage,
-      ];
+    status,
+    selectedFilter,
+    searchQuery,
+    entries,
+    errorMessage,
+  ];
 }
 
 class MatchesCubit extends Cubit<MatchesState> {
   MatchesCubit({MatchesRepository? repository})
-      : _repo = repository ?? MatchesRepository.instance,
-        super(const MatchesState()) {
+    : _repo = repository ?? MatchesRepository.instance,
+      super(const MatchesState()) {
     _init();
   }
 

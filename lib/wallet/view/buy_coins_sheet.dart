@@ -73,6 +73,7 @@ class _BuyCoinsSheetState extends State<BuyCoinsSheet> {
     final pack = packs[safeIndex];
 
     return Container(
+      constraints: const BoxConstraints(maxWidth: 560),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),

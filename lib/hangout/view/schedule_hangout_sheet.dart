@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:myalien/app/constants/app_strings.dart';
+import 'package:myalien/app/theme/app_tokens.dart';
 import 'package:myalien/app/view/app_image.dart';
 import 'package:myalien/hangout/repository/hangout_repository.dart';
 import 'package:myalien/hangout/view/activity_selection_screen.dart';
@@ -209,15 +210,16 @@ class _ScheduleHangoutSheetState extends State<ScheduleHangoutSheet> {
   Widget build(BuildContext context) {
     final conflict = _checkConflict();
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final tokens = AppColorTokens.of(context);
 
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
       padding: EdgeInsets.only(bottom: bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: tokens.bgSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -228,7 +230,7 @@ class _ScheduleHangoutSheetState extends State<ScheduleHangoutSheet> {
             width: 44,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: tokens.borderLow,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -247,6 +249,8 @@ class _ScheduleHangoutSheetState extends State<ScheduleHangoutSheet> {
                       source: widget.profile.photos.isNotEmpty
                           ? widget.profile.photos.first
                           : '',
+                      memCacheWidth: 120,
+                      memCacheHeight: 120,
                     ),
                   ),
                 ),
@@ -260,18 +264,18 @@ class _ScheduleHangoutSheetState extends State<ScheduleHangoutSheet> {
                           Flexible(
                             child: Text(
                               'Request ${widget.profile.name}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E1E2D),
+                                color: tokens.textPrimary,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Icon(
+                          Icon(
                             Icons.verified,
-                            color: Color(0xFF6C4AB6),
+                            color: tokens.brandAccent,
                             size: 16,
                           ),
                         ],
@@ -283,7 +287,7 @@ class _ScheduleHangoutSheetState extends State<ScheduleHangoutSheet> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
+                          color: tokens.textSecondary,
                         ),
                       ),
                     ],
@@ -291,12 +295,12 @@ class _ScheduleHangoutSheetState extends State<ScheduleHangoutSheet> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Colors.grey),
+                  icon: Icon(Icons.close, color: tokens.textMuted),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFE2DDF4)),
+          Divider(height: 1, color: tokens.borderLow),
 
           // Scrollable Body
           Expanded(

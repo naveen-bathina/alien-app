@@ -160,6 +160,7 @@ class _RedeemCoinsSheetState extends State<RedeemCoinsSheet>
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       constraints: BoxConstraints(
+        maxWidth: 560,
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       child: SafeArea(

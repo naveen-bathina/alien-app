@@ -152,7 +152,7 @@ void main() {
 
     test('detects conflict if requester already has another hangout booked',
         () async {
-      var targetDate = DateTime.now();
+      var targetDate = DateTime.now().add(const Duration(days: 1));
       while (targetDate.weekday != DateTime.friday) {
         targetDate = targetDate.add(const Duration(days: 1));
       }

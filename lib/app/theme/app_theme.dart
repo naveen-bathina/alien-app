@@ -1,95 +1,264 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:myalien/app/theme/app_colors.dart';
+import 'package:myalien/app/theme/app_tokens.dart';
 
-/// Centralized Material 3 Theme configuration for MyAlien.
+/// Centralized Material 3 Theme configuration with Light & Dark SaaS themes.
 class AppTheme {
   AppTheme._();
 
-  static ThemeData get theme {
+  static ThemeData get lightTheme {
+    const tokens = AppColorTokens.light;
+    final baseTextTheme = GoogleFonts.plusJakartaSansTextTheme();
+
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
-        primary: AppColors.primary,
-        surface: AppColors.surface,
-        error: AppColors.error,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.light(
+        primary: AppTokens.brandPrimary,
+        onPrimary: Colors.white,
+        surface: tokens.bgSurface,
+        onSurface: tokens.textPrimary,
+        error: AppTokens.error,
+        onError: Colors.white,
+        outline: tokens.borderLow,
       ),
-      iconTheme: const IconThemeData(
-        color: AppColors.primary,
+      scaffoldBackgroundColor: tokens.bgBase,
+      textTheme: baseTextTheme.copyWith(
+        headlineLarge: baseTextTheme.headlineLarge?.copyWith(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.5,
+        ),
+        headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
+        ),
+        titleLarge: baseTextTheme.titleLarge?.copyWith(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.2,
+        ),
+        titleMedium: baseTextTheme.titleMedium?.copyWith(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyLarge: baseTextTheme.bodyLarge?.copyWith(
+          color: tokens.textPrimary,
+          fontSize: 16,
+          height: 1.5,
+          letterSpacing: -0.1,
+        ),
+        bodyMedium: baseTextTheme.bodyMedium?.copyWith(
+          color: tokens.textSecondary,
+          fontSize: 14,
+          height: 1.45,
+        ),
+        bodySmall: baseTextTheme.bodySmall?.copyWith(
+          color: tokens.textMuted,
+          fontSize: 12,
+          height: 1.4,
+        ),
       ),
-      scaffoldBackgroundColor: AppColors.background,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.surface,
+      appBarTheme: AppBarTheme(
+        backgroundColor: tokens.bgSurface,
         elevation: 0,
         centerTitle: false,
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
-        titleTextStyle: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+        scrolledUnderElevation: 0,
+        iconTheme: IconThemeData(color: tokens.textPrimary),
+        titleTextStyle: GoogleFonts.plusJakartaSans(
+          color: tokens.textPrimary,
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surface,
+        color: tokens.bgSurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppTokens.radiusLg),
+          side: BorderSide(color: tokens.borderLow),
         ),
         margin: EdgeInsets.zero,
       ),
+      dividerTheme: DividerThemeData(
+        color: tokens.borderLow,
+        thickness: 1,
+        space: 1,
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        fillColor: tokens.bgSurface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          borderSide: BorderSide(color: tokens.borderLow),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          borderSide: BorderSide(color: tokens.borderLow),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          borderSide: BorderSide(color: tokens.borderFocus, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          borderSide: const BorderSide(color: AppTokens.error),
         ),
-        hintStyle: const TextStyle(
-          color: AppColors.textMuted,
+        hintStyle: TextStyle(
+          color: tokens.textMuted,
           fontSize: 14,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: AppTokens.brandPrimary,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppTokens.radiusMd),
           ),
           textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
-        ),
-      ),
-      chipTheme: ChipThemeData(
-        backgroundColor: AppColors.surface,
-        selectedColor: AppColors.primaryLight,
-        side: const BorderSide(color: AppColors.border),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        labelStyle: const TextStyle(
-          fontSize: 13,
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.w500,
         ),
       ),
     );
   }
+
+  static ThemeData get darkTheme {
+    const tokens = AppColorTokens.dark;
+    final baseTextTheme = GoogleFonts.plusJakartaSansTextTheme(
+      ThemeData.dark().textTheme,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.dark(
+        primary: AppTokens.brandPrimaryLight,
+        onPrimary: const Color(0xFF0E0F12),
+        surface: tokens.bgSurface,
+        onSurface: tokens.textPrimary,
+        error: AppTokens.error,
+        onError: Colors.white,
+        outline: tokens.borderLow,
+      ),
+      scaffoldBackgroundColor: tokens.bgBase,
+      textTheme: baseTextTheme.copyWith(
+        headlineLarge: baseTextTheme.headlineLarge?.copyWith(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.5,
+        ),
+        headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
+        ),
+        titleLarge: baseTextTheme.titleLarge?.copyWith(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.2,
+        ),
+        titleMedium: baseTextTheme.titleMedium?.copyWith(
+          color: tokens.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyLarge: baseTextTheme.bodyLarge?.copyWith(
+          color: tokens.textPrimary,
+          fontSize: 16,
+          height: 1.5,
+          letterSpacing: -0.1,
+        ),
+        bodyMedium: baseTextTheme.bodyMedium?.copyWith(
+          color: tokens.textSecondary,
+          fontSize: 14,
+          height: 1.45,
+        ),
+        bodySmall: baseTextTheme.bodySmall?.copyWith(
+          color: tokens.textMuted,
+          fontSize: 12,
+          height: 1.4,
+        ),
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: tokens.bgSurface,
+        elevation: 0,
+        centerTitle: false,
+        scrolledUnderElevation: 0,
+        iconTheme: IconThemeData(color: tokens.textPrimary),
+        titleTextStyle: GoogleFonts.plusJakartaSans(
+          color: tokens.textPrimary,
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: tokens.bgSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTokens.radiusLg),
+          side: BorderSide(color: tokens.borderLow),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      dividerTheme: DividerThemeData(
+        color: tokens.borderLow,
+        thickness: 1,
+        space: 1,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: tokens.bgSubtle,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          borderSide: BorderSide(color: tokens.borderLow),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          borderSide: BorderSide(color: tokens.borderLow),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          borderSide: BorderSide(color: tokens.borderFocus, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          borderSide: const BorderSide(color: AppTokens.error),
+        ),
+        hintStyle: TextStyle(
+          color: tokens.textMuted,
+          fontSize: 14,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTokens.brandPrimaryLight,
+          foregroundColor: const Color(0xFF0E0F12),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Backward compatibility alias for legacy theme calls
+  static ThemeData get theme => lightTheme;
 }

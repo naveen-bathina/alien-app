@@ -1,21 +1,29 @@
 // home_screen.dart
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myalien/app/constants/app_strings.dart';
 import 'package:myalien/app/theme/app_colors.dart';
-import 'package:myalien/app/view/app_image.dart';
+import 'package:myalien/app/theme/app_tokens.dart';
 import 'package:myalien/app/view/brand_logo.dart';
+import 'package:myalien/app/view/responsive_breakpoints.dart';
 import 'package:myalien/app/widgets/app_empty_state.dart';
+import 'package:myalien/app/widgets/app_sidebar.dart';
+import 'package:myalien/app/widgets/app_top_bar.dart';
+import 'package:myalien/app/widgets/command_palette_modal.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:myalien/discover/view/companion_bento_panel.dart';
 import 'package:myalien/discover/view/discovery_filter_sheet.dart';
 import 'package:myalien/discover/view/full_profile_screen.dart';
-import 'package:myalien/hangout/view/schedule_hangout_sheet.dart';
 import 'package:myalien/home/cubit/home_cubit.dart';
 import 'package:myalien/home/cubit/home_state.dart';
 import 'package:myalien/home/models/profile_model.dart';
 import 'package:myalien/home/repository/home_profile_repository.dart';
 import 'package:myalien/home/view/app_drawer.dart';
+import 'package:myalien/home/widgets/action_stamps.dart';
+import 'package:myalien/home/widgets/profile_card.dart';
 import 'package:myalien/matches/matches.dart';
 import 'package:myalien/meetups/view/meetups_view.dart';
 import 'package:myalien/profile/view/profile_screen.dart';
@@ -66,6 +74,56 @@ class _HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<_HomeView> {
   late int _currentIndex;
+  bool _sidebarCollapsed = false;
+
+  void _openCommandPalette() {
+    CommandPaletteModal.show(
+      context,
+      actions: [
+        CommandPaletteAction(
+          title: 'Discover Companions',
+          icon: Icons.explore_rounded,
+          shortcut: '⌘1',
+          onSelect: () => setState(() => _currentIndex = 0),
+        ),
+        CommandPaletteAction(
+          title: 'Hangouts & Meetups',
+          icon: Icons.calendar_month_rounded,
+          shortcut: '⌘2',
+          onSelect: () => setState(() => _currentIndex = 1),
+        ),
+        CommandPaletteAction(
+          title: 'Matches & Chat',
+          icon: Icons.favorite_rounded,
+          shortcut: '⌘3',
+          onSelect: () => setState(() => _currentIndex = 2),
+        ),
+        CommandPaletteAction(
+          title: 'Filter Companions',
+          icon: Icons.tune_rounded,
+          shortcut: 'F',
+          onSelect: () {
+            setState(() => _currentIndex = 0);
+            _openFilterSheet(context);
+          },
+        ),
+        CommandPaletteAction(
+          title: 'Buy Alien Coins',
+          icon: Icons.monetization_on_rounded,
+          category: 'Wallet',
+          onSelect: () => BuyCoinsSheet.show(context),
+        ),
+        CommandPaletteAction(
+          title: 'Notification Settings',
+          icon: Icons.notifications_rounded,
+          category: 'Settings',
+          onSelect: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+          ),
+        ),
+      ],
+    );
+  }
 
   String get _currentUserId {
     try {
@@ -90,8 +148,11 @@ class _HomeViewState extends State<_HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = kIsWeb && !WebBreakpoints.isCompact(context);
     return Scaffold(
-      appBar: AppBar(
+      appBar: isWide
+          ? null
+          : AppBar(
         titleSpacing: 0,
         title: BrandAppBarTitle(
           _currentIndex == 0
@@ -108,45 +169,50 @@ class _HomeViewState extends State<_HomeView> {
             initialData: walletRepository.currentState,
             builder: (context, snapshot) {
               final balance = snapshot.data?.availableBalance ?? 0;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () => BuyCoinsSheet.show(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3EEFC),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFF6C4AB6).withValues(alpha: 0.3),
+              final tokens = AppColorTokens.of(context);
+              return Semantics(
+                button: true,
+                label: 'Alien Coins balance: $balance. Tap to buy coins',
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => BuyCoinsSheet.show(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('🪙', style: TextStyle(fontSize: 12)),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$balance',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF6C4AB6),
+                        decoration: BoxDecoration(
+                          color: tokens.brandAccentSubtle,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: tokens.brandAccent.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('🪙', style: TextStyle(fontSize: 12)),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$balance',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: tokens.brandAccent,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 2),
-                          const Icon(
-                            Icons.add_circle,
-                            size: 13,
-                            color: Color(0xFF6C4AB6),
-                          ),
-                        ],
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.add_circle,
+                              size: 13,
+                              color: tokens.brandAccent,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -214,41 +280,109 @@ class _HomeViewState extends State<_HomeView> {
           _openFilterSheet(context);
         },
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() => _currentIndex = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore_rounded),
-            label: AppStrings.navDiscover,
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: AppStrings.navHangouts,
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.favorite_border_rounded),
-            selectedIcon: Icon(Icons.favorite_rounded),
-            label: AppStrings.navMatches,
-          ),
-        ],
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _buildDiscoverTab(context),
-          MeetupsView(
-            onExploreTapped: () => setState(() => _currentIndex = 0),
-          ),
-          MatchesView(
-            onExploreTapped: () => setState(() => _currentIndex = 0),
-          ),
-        ],
-      ),
+      bottomNavigationBar: isWide
+          ? null
+          : NavigationBar(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: (index) {
+                setState(() => _currentIndex = index);
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.explore_outlined),
+                  selectedIcon: Icon(Icons.explore_rounded),
+                  label: AppStrings.navDiscover,
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.calendar_month_outlined),
+                  selectedIcon: Icon(Icons.calendar_month_rounded),
+                  label: AppStrings.navHangouts,
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.favorite_border_rounded),
+                  selectedIcon: Icon(Icons.favorite_rounded),
+                  label: AppStrings.navMatches,
+                ),
+              ],
+            ),
+      body: isWide
+          ? Row(
+              children: [
+                AppSidebar(
+                  selectedIndex: _currentIndex,
+                  isCollapsed: _sidebarCollapsed,
+                  onToggleCollapsed: () {
+                    setState(() => _sidebarCollapsed = !_sidebarCollapsed);
+                  },
+                  onSelectIndex: (index) {
+                    setState(() => _currentIndex = index);
+                  },
+                  items: const [
+                    AppSidebarItem(
+                      title: AppStrings.navDiscover,
+                      icon: Icons.explore_rounded,
+                    ),
+                    AppSidebarItem(
+                      title: AppStrings.navHangouts,
+                      icon: Icons.calendar_month_rounded,
+                    ),
+                    AppSidebarItem(
+                      title: AppStrings.navMatches,
+                      icon: Icons.favorite_rounded,
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      AppTopBar(
+                        title: _currentIndex == 0
+                            ? AppStrings.navDiscover
+                            : _currentIndex == 1
+                            ? AppStrings.navHangouts
+                            : AppStrings.navMatches,
+                        onOpenCommandPalette: _openCommandPalette,
+                        onOpenNotifications: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const SettingsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      Expanded(
+                        child: IndexedStack(
+                          index: _currentIndex,
+                          children: [
+                            _buildDiscoverTab(context),
+                            MeetupsView(
+                              onExploreTapped: () =>
+                                  setState(() => _currentIndex = 0),
+                            ),
+                            MatchesView(
+                              onExploreTapped: () =>
+                                  setState(() => _currentIndex = 0),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          : IndexedStack(
+              index: _currentIndex,
+              children: [
+                _buildDiscoverTab(context),
+                MeetupsView(
+                  onExploreTapped: () => setState(() => _currentIndex = 0),
+                ),
+                MatchesView(
+                  onExploreTapped: () => setState(() => _currentIndex = 0),
+                ),
+              ],
+            ),
     );
   }
 
@@ -300,40 +434,89 @@ class _HomeViewState extends State<_HomeView> {
               Expanded(
                 child: profiles.isEmpty
                     ? _emptyState(context, state)
-                    : Stack(
-                        children: [
-                          // Full Screen Tinder Swiping Cards
-                          Positioned.fill(
-                            child: SwipeCardStack(
-                              profiles: profiles.skip(index).take(3).toList(),
-                              onAction: (profile, action) {
-                                context.read<HomeCubit>().takeAction(
-                                  profile.uid,
-                                  action,
-                                );
-                                if (action == 'like' || action == 'superlike') {
-                                  MatchesRepository.instance
-                                      .recordOutgoingAction(profile, action);
-                                }
-                              },
-                              onOpenDetails: (profile) {
-                                _openFullProfile(context, profile);
-                              },
-                              onNoMore: () {},
-                            ),
-                          ),
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final showInspector =
+                              constraints.maxWidth >= WebBreakpoints.desktopLarge;
 
-                          // Floating Tinder Action Buttons Bar
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 12,
-                            child: _buildFloatingControls(
-                              context,
-                              profiles[index],
+                          final swiperStack = Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: WebBreakpoints.maxContentWidth,
+                              ),
+                              child: Stack(
+                                children: [
+                                  // Full Screen Tinder Swiping Cards
+                                  Positioned.fill(
+                                    child: SwipeCardStack(
+                                      profiles:
+                                          profiles.skip(index).take(3).toList(),
+                                      onAction: (profile, action) {
+                                        context.read<HomeCubit>().takeAction(
+                                          profile.uid,
+                                          action,
+                                        );
+                                        if (action == 'like' ||
+                                            action == 'superlike') {
+                                          MatchesRepository.instance
+                                              .recordOutgoingAction(
+                                            profile,
+                                            action,
+                                          );
+                                        }
+                                      },
+                                      onOpenDetails: (profile) {
+                                        _openFullProfile(context, profile);
+                                      },
+                                      onNoMore: () {},
+                                    ),
+                                  ),
+
+                                  // Floating Tinder Action Buttons Bar
+                                  Positioned(
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 12,
+                                    child: _buildFloatingControls(
+                                      context,
+                                      profiles[index],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          );
+
+                          if (showInspector) {
+                            return Row(
+                              children: [
+                                Expanded(
+                                  flex: 5,
+                                  child: swiperStack,
+                                ),
+                                const VerticalDivider(
+                                  width: 1,
+                                  thickness: 1,
+                                  color: Color(0xFFE2DDF4),
+                                ),
+                                Expanded(
+                                  flex: 4,
+                                  child: CompanionBentoPanel(
+                                    profile: profiles[index],
+                                    onAction: (action) {
+                                      context.read<HomeCubit>().takeAction(
+                                        profiles[index].uid,
+                                        action,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+
+                          return swiperStack;
+                        },
                       ),
               ),
             ],
@@ -346,29 +529,36 @@ class _HomeViewState extends State<_HomeView> {
   Widget _buildQuickFilterBar(BuildContext context, HomeState state) {
     final filters = state.filters;
     final cubit = context.read<HomeCubit>();
+    final tokens = AppColorTokens.of(context);
 
-    return Container(
-      height: 48,
-      margin: const EdgeInsets.only(top: 4, bottom: 6),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        children: [
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: WebBreakpoints.maxContentWidth,
+        ),
+        child: Container(
+          height: 56,
+          margin: const EdgeInsets.only(top: 4, bottom: 8),
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            children: [
           // Filter Tune Button with Badge
           ActionChip(
+            materialTapTargetSize: MaterialTapTargetSize.padded,
             avatar: Badge(
               isLabelVisible: filters.activeFilterCount > 0,
               label: Text(
                 '${filters.activeFilterCount}',
                 style: const TextStyle(fontSize: 10),
               ),
-              backgroundColor: const Color(0xFF6C4AB6),
+              backgroundColor: tokens.brandAccent,
               child: Icon(
                 Icons.tune_rounded,
                 size: 16,
                 color: filters.activeFilterCount > 0
-                    ? const Color(0xFF6C4AB6)
-                    : const Color(0xFF1E1E2D),
+                    ? tokens.brandAccent
+                    : tokens.textPrimary,
               ),
             ),
             label: Text(
@@ -376,22 +566,22 @@ class _HomeViewState extends State<_HomeView> {
                   ? '${AppStrings.navFilters} (${filters.activeFilterCount})'
                   : AppStrings.navFilters,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: filters.activeFilterCount > 0
-                    ? const Color(0xFF6C4AB6)
-                    : const Color(0xFF1E1E2D),
+                    ? tokens.brandAccent
+                    : tokens.textPrimary,
               ),
             ),
             backgroundColor: filters.activeFilterCount > 0
-                ? const Color(0xFFF7F5FC)
-                : Colors.white,
+                ? tokens.brandAccentSubtle
+                : tokens.bgSurface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: filters.activeFilterCount > 0
-                    ? const Color(0xFF6C4AB6)
-                    : const Color(0xFFE2DDF4),
+                    ? tokens.brandAccent
+                    : tokens.borderLow,
               ),
             ),
             onPressed: () => _openFilterSheet(context),
@@ -400,46 +590,48 @@ class _HomeViewState extends State<_HomeView> {
 
           // Role quick toggles
           ChoiceChip(
+            materialTapTargetSize: MaterialTapTargetSize.padded,
             label: const Text('Earners'),
             selected: filters.role == 'Earner',
-            selectedColor: const Color(0xFF6C4AB6),
-            backgroundColor: const Color(0xFFF7F5FC),
+            selectedColor: tokens.brandAccent,
+            backgroundColor: tokens.bgSubtle,
             labelStyle: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: filters.role == 'Earner'
                   ? Colors.white
-                  : const Color(0xFF1E1E2D),
+                  : tokens.textPrimary,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: filters.role == 'Earner'
-                    ? const Color(0xFF6C4AB6)
-                    : const Color(0xFFE2DDF4),
+                    ? tokens.brandAccent
+                    : tokens.borderLow,
               ),
             ),
             onSelected: (_) => cubit.toggleRole('Earner'),
           ),
           const SizedBox(width: 8),
           ChoiceChip(
+            materialTapTargetSize: MaterialTapTargetSize.padded,
             label: const Text('Sponsors'),
             selected: filters.role == 'Sponsor',
-            selectedColor: const Color(0xFF6C4AB6),
-            backgroundColor: const Color(0xFFF7F5FC),
+            selectedColor: tokens.brandAccent,
+            backgroundColor: tokens.bgSubtle,
             labelStyle: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: filters.role == 'Sponsor'
                   ? Colors.white
-                  : const Color(0xFF1E1E2D),
+                  : tokens.textPrimary,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: filters.role == 'Sponsor'
-                    ? const Color(0xFF6C4AB6)
-                    : const Color(0xFFE2DDF4),
+                    ? tokens.brandAccent
+                    : tokens.borderLow,
               ),
             ),
             onSelected: (_) => cubit.toggleRole('Sponsor'),
@@ -448,30 +640,31 @@ class _HomeViewState extends State<_HomeView> {
 
           // Nearby GPS Quick Chip
           FilterChip(
+            materialTapTargetSize: MaterialTapTargetSize.padded,
             avatar: Icon(
               Icons.my_location_rounded,
               size: 14,
               color: filters.nearbyOnly
                   ? Colors.white
-                  : const Color(0xFF6C4AB6),
+                  : tokens.brandAccent,
             ),
             label: const Text('📍 Nearby'),
             selected: filters.nearbyOnly,
-            selectedColor: const Color(0xFF6C4AB6),
-            backgroundColor: const Color(0xFFF7F5FC),
+            selectedColor: tokens.brandAccent,
+            backgroundColor: tokens.bgSubtle,
             labelStyle: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: filters.nearbyOnly
                   ? Colors.white
-                  : const Color(0xFF1E1E2D),
+                  : tokens.textPrimary,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: filters.nearbyOnly
-                    ? const Color(0xFF6C4AB6)
-                    : const Color(0xFFE2DDF4),
+                    ? tokens.brandAccent
+                    : tokens.borderLow,
               ),
             ),
             onSelected: (_) => cubit.toggleNearby(),
@@ -480,30 +673,31 @@ class _HomeViewState extends State<_HomeView> {
 
           // Available Today
           FilterChip(
+            materialTapTargetSize: MaterialTapTargetSize.padded,
             avatar: Icon(
               Icons.bolt_rounded,
               size: 16,
               color: filters.availableTodayOnly
                   ? Colors.white
-                  : const Color(0xFF16A34A),
+                  : tokens.success,
             ),
             label: const Text('Available Today'),
             selected: filters.availableTodayOnly,
-            selectedColor: const Color(0xFF16A34A),
-            backgroundColor: const Color(0xFFF0FDF4),
+            selectedColor: tokens.success,
+            backgroundColor: tokens.successBg,
             labelStyle: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: filters.availableTodayOnly
                   ? Colors.white
-                  : const Color(0xFF15803D),
+                  : tokens.success,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: filters.availableTodayOnly
-                    ? const Color(0xFF16A34A)
-                    : const Color(0xFFBBF7D0),
+                    ? tokens.success
+                    : tokens.success.withValues(alpha: 0.3),
               ),
             ),
             onSelected: (_) => cubit.toggleAvailableToday(),
@@ -512,37 +706,40 @@ class _HomeViewState extends State<_HomeView> {
 
           // Verified Only
           FilterChip(
+            materialTapTargetSize: MaterialTapTargetSize.padded,
             avatar: Icon(
               Icons.verified_rounded,
               size: 15,
               color: filters.verifiedOnly
                   ? Colors.white
-                  : const Color(0xFF6C4AB6),
+                  : tokens.brandAccent,
             ),
             label: const Text('Verified'),
             selected: filters.verifiedOnly,
-            selectedColor: const Color(0xFF6C4AB6),
-            backgroundColor: const Color(0xFFF7F5FC),
+            selectedColor: tokens.brandAccent,
+            backgroundColor: tokens.bgSubtle,
             labelStyle: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: filters.verifiedOnly
                   ? Colors.white
-                  : const Color(0xFF1E1E2D),
+                  : tokens.textPrimary,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: filters.verifiedOnly
-                    ? const Color(0xFF6C4AB6)
-                    : const Color(0xFFE2DDF4),
+                    ? tokens.brandAccent
+                    : tokens.borderLow,
               ),
             ),
             onSelected: (_) => cubit.toggleVerifiedOnly(),
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   void _openFullProfile(BuildContext context, Profile profile) {
@@ -681,29 +878,28 @@ class _HomeViewState extends State<_HomeView> {
     String? tooltip,
     VoidCallback? onPressed,
   }) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: bgColor,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+    return Semantics(
+      button: true,
+      label: tooltip,
+      enabled: onPressed != null,
       child: Material(
-        color: Colors.transparent,
+        color: bgColor,
+        shape: const CircleBorder(),
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.15),
         child: InkWell(
-          borderRadius: BorderRadius.circular(size),
+          customBorder: const CircleBorder(),
+          splashColor: color.withValues(alpha: 0.18),
+          highlightColor: color.withValues(alpha: 0.08),
           onTap: onPressed,
           child: Tooltip(
             message: tooltip ?? '',
-            child: Center(
-              child: Icon(icon, color: color, size: iconSize),
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Center(
+                child: Icon(icon, color: color, size: iconSize),
+              ),
             ),
           ),
         ),
@@ -764,11 +960,21 @@ class _SwipeCardStackState extends State<SwipeCardStack>
     super.dispose();
   }
 
+  bool _ignoreDragForEdgeSwipe = false;
+
   void _onPanStart(DragStartDetails d) {
     _resetController.stop();
+    // Safeguard iOS edge-swipe back navigation: If drag originates from the outer left edge (<24px),
+    // let system navigation gestures take precedence.
+    if (d.localPosition.dx < 24.0) {
+      _ignoreDragForEdgeSwipe = true;
+      return;
+    }
+    _ignoreDragForEdgeSwipe = false;
   }
 
   void _onPanUpdate(DragUpdateDetails d) {
+    if (_ignoreDragForEdgeSwipe) return;
     setState(() {
       _cardOffset += d.delta;
       _cardRotation = _rotationFactor * _cardOffset.dx;
@@ -776,6 +982,10 @@ class _SwipeCardStackState extends State<SwipeCardStack>
   }
 
   void _onPanEnd(DragEndDetails d, Profile topProfile) {
+    if (_ignoreDragForEdgeSwipe) {
+      _ignoreDragForEdgeSwipe = false;
+      return;
+    }
     final velocity = d.velocity.pixelsPerSecond;
     final primaryVel = velocity.distance;
     final shouldFling = primaryVel > _velocityThreshold;
@@ -812,6 +1022,19 @@ class _SwipeCardStackState extends State<SwipeCardStack>
     String action,
     Profile profile,
   ) {
+    final disableAnimations = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (disableAnimations) {
+      widget.onAction(profile, action);
+      setState(() {
+        _cardOffset = Offset.zero;
+        _cardRotation = 0;
+      });
+      if (widget.profiles.length <= 1) {
+        widget.onNoMore?.call();
+      }
+      return;
+    }
+
     final screenSize = MediaQuery.of(context).size;
     final endOffset = Offset(
       offset.dx +
@@ -908,25 +1131,29 @@ class _SwipeCardStackState extends State<SwipeCardStack>
       );
 
       if (isTop) {
-        card = GestureDetector(
-          onTap: () => widget.onOpenDetails?.call(profiles[0]),
-          onPanStart: _onPanStart,
-          onPanUpdate: _onPanUpdate,
-          onPanEnd: (d) => _onPanEnd(d, profiles[0]),
-          child: Stack(
-            children: [
-              card,
-              // Stamp badges overlay
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 100),
-                    opacity: _cardOffset.distance > 15 ? 1.0 : 0.0,
-                    child: _ActionStamps(offset: _cardOffset),
+        card = Semantics(
+          label: '${profiles[0].name}, ${profiles[0].age} years old. Double tap to view full profile. Swipe right to like, swipe left to pass.',
+          button: true,
+          child: GestureDetector(
+            onTap: () => widget.onOpenDetails?.call(profiles[0]),
+            onPanStart: _onPanStart,
+            onPanUpdate: _onPanUpdate,
+            onPanEnd: (d) => _onPanEnd(d, profiles[0]),
+            child: Stack(
+              children: [
+                card,
+                // Stamp badges overlay
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 100),
+                      opacity: _cardOffset.distance > 15 ? 1.0 : 0.0,
+                      child: ActionStamps(offset: _cardOffset),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       }
@@ -934,514 +1161,48 @@ class _SwipeCardStackState extends State<SwipeCardStack>
       cards.add(card);
     }
 
-    return Stack(children: cards);
-  }
-}
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (profiles.isEmpty) return KeyEventResult.ignored;
+        final top = profiles.first;
 
-/// Full-screen Tinder Profile Card with story progress dashes and coin rate.
-class ProfileCard extends StatefulWidget {
-  const ProfileCard({
-    required this.profile,
-    super.key,
-    this.onOpenDetails,
-  });
+        if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+            event.logicalKey == LogicalKeyboardKey.keyA) {
+          _flingOut(
+            const Offset(-150, 0),
+            const Offset(-800, 0),
+            'later',
+            top,
+          );
+          return KeyEventResult.handled;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowRight ||
+            event.logicalKey == LogicalKeyboardKey.keyD) {
+          _flingOut(
+            const Offset(150, 0),
+            const Offset(800, 0),
+            'like',
+            top,
+          );
+          return KeyEventResult.handled;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
+            event.logicalKey == LogicalKeyboardKey.keyW) {
+          _flingOut(
+            const Offset(0, -150),
+            const Offset(0, -800),
+            'superlike',
+            top,
+          );
+          return KeyEventResult.handled;
+        } else if (event.logicalKey == LogicalKeyboardKey.space) {
+          widget.onOpenDetails?.call(top);
+          return KeyEventResult.handled;
+        }
 
-  final Profile profile;
-  final VoidCallback? onOpenDetails;
-
-  @override
-  State<ProfileCard> createState() => _ProfileCardState();
-}
-
-class _ProfileCardState extends State<ProfileCard> {
-  int _photoIndex = 0;
-
-  void _nextPhoto() {
-    final photos = widget.profile.photos;
-    if (_photoIndex < photos.length - 1) {
-      setState(() => _photoIndex++);
-    }
-  }
-
-  void _prevPhoto() {
-    if (_photoIndex > 0) {
-      setState(() => _photoIndex--);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final profile = widget.profile;
-    final photos = profile.photos;
-    final isEarner = profile.isEarner;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(10, 6, 10, 80),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.16),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.hardEdge,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background Photo
-          if (photos.isEmpty)
-            ColoredBox(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: const Center(child: Icon(Icons.person, size: 96)),
-            )
-          else
-            AppImage(source: photos[_photoIndex]),
-
-          // Tap zones for photo navigation
-          if (photos.length > 1) ...[
-            // Left Tap: Previous photo
-            Positioned(
-              top: 0,
-              left: 0,
-              bottom: 180,
-              width: 120,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _prevPhoto,
-              ),
-            ),
-            // Right Tap: Next photo
-            Positioned(
-              top: 0,
-              right: 0,
-              bottom: 180,
-              width: 120,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _nextPhoto,
-              ),
-            ),
-          ],
-
-          // Top Gradient & Story Progress Bars
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 90,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.black.withValues(alpha: 0.65),
-                    Colors.transparent,
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-              child: photos.length > 1
-                  ? Row(
-                      children: List.generate(
-                        photos.length,
-                        (index) => Expanded(
-                          child: Container(
-                            height: 4,
-                            margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                            decoration: BoxDecoration(
-                              color: _photoIndex == index
-                                  ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.35),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ),
-
-          // Bottom Gradient & Information Overlay
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(16, 28, 16, 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.88),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Name, Age, Verified & Info Button
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                '${profile.name}, ${profile.age}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (profile.isVerified) ...[
-                              const SizedBox(width: 6),
-                              const Icon(
-                                Icons.verified_rounded,
-                                color: Colors.blueAccent,
-                                size: 20,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-
-                      // Info / Expand Details Button
-                      GestureDetector(
-                        onTap: widget.onOpenDetails,
-                        child: Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.arrow_upward_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // Role & Coin Economics Pill
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isEarner
-                                ? Colors.green.shade700
-                                : Colors.purple.shade700,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (isEarner ? Colors.green : Colors.purple)
-                                    .withValues(alpha: 0.3),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isEarner
-                                    ? Icons.stars_rounded
-                                    : Icons.diamond_rounded,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 5),
-                              Flexible(
-                                child: Text(
-                                  isEarner && profile.coinsPerHour != null
-                                      ? '🪙 ${profile.coinsPerHour} C/hr • Earner'
-                                      : '👑 Sponsor • Host',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Rating
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            color: Colors.amber,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${profile.rating}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      if (isEarner) ...[
-                        const SizedBox(width: 8),
-                        // Instant 1-Tap Book Button
-                        InkWell(
-                          onTap: () => ScheduleHangoutSheet.show(
-                            context,
-                            profile: profile,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6C4AB6),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.25),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.calendar_month_rounded,
-                                  size: 13,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Book',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // Location & Distance
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        color: Colors.white70,
-                        size: 15,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          profile.location,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // Availability Status Pill
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: profile.availability.isAvailableToday
-                              ? Colors.greenAccent.shade400
-                              : Colors.orangeAccent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          '${profile.availability.statusText} • '
-                          '${profile.availability.timeWindow}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Bio Snippet
-                  if (profile.bio.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      profile.bio,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 12,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Dynamic LIKE / NOPE / SUPER LIKE Stamp Badges
-class _ActionStamps extends StatelessWidget {
-  const _ActionStamps({required this.offset});
-  final Offset offset;
-
-  @override
-  Widget build(BuildContext context) {
-    final dx = offset.dx;
-    final dy = offset.dy;
-
-    final isLike = dx > 20;
-    final isNope = dx < -20;
-    final isSuper = dy < -40 && dy.abs() > dx.abs();
-
-    if (isSuper) {
-      final opacity = min<double>(dy.abs() / 120, 1);
-      return Positioned(
-        top: 60,
-        left: 0,
-        right: 0,
-        child: Opacity(
-          opacity: opacity,
-          child: Center(
-            child: _stamp(
-              'SUPER LIKE',
-              Colors.blueAccent.shade400,
-              icon: Icons.star_rounded,
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (isLike) {
-      final opacity = min<double>(dx.abs() / 100, 1);
-      return Positioned(
-        top: 50,
-        left: 30,
-        child: Transform.rotate(
-          angle: -0.25,
-          child: Opacity(
-            opacity: opacity,
-            child: _stamp(
-              'LIKE',
-              Colors.greenAccent.shade700,
-              icon: Icons.favorite_rounded,
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (isNope) {
-      final opacity = min<double>(dx.abs() / 100, 1);
-      return Positioned(
-        top: 50,
-        right: 30,
-        child: Transform.rotate(
-          angle: 0.25,
-          child: Opacity(
-            opacity: opacity,
-            child: _stamp(
-              'NOPE',
-              Colors.redAccent.shade400,
-              icon: Icons.close_rounded,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
-  }
-
-  Widget _stamp(String text, Color color, {IconData? icon}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color, width: 3),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, color: color, size: 24),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            text,
-            style: TextStyle(
-              color: color,
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2,
-            ),
-          ),
-        ],
-      ),
+        return KeyEventResult.ignored;
+      },
+      child: Stack(children: cards),
     );
   }
 }

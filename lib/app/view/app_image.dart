@@ -10,6 +10,8 @@ class AppImage extends StatelessWidget {
     this.fit = BoxFit.cover,
     this.placeholder,
     this.errorWidget,
+    this.memCacheWidth,
+    this.memCacheHeight,
     super.key,
   });
 
@@ -17,6 +19,8 @@ class AppImage extends StatelessWidget {
   final BoxFit fit;
   final WidgetBuilder? placeholder;
   final WidgetBuilder? errorWidget;
+  final int? memCacheWidth;
+  final int? memCacheHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -30,13 +34,16 @@ class AppImage extends StatelessWidget {
     if (trimmed.startsWith('data:image/') || !trimmed.startsWith('http')) {
       try {
         final commaIdx = trimmed.indexOf(',');
-        final base64String =
-            commaIdx != -1 ? trimmed.substring(commaIdx + 1) : trimmed;
+        final base64String = commaIdx != -1
+            ? trimmed.substring(commaIdx + 1)
+            : trimmed;
         final cleanBase64 = base64String.replaceAll(RegExp(r'\s+'), '');
         final bytes = base64Decode(cleanBase64);
         return Image.memory(
           bytes,
           fit: fit,
+          cacheWidth: memCacheWidth,
+          cacheHeight: memCacheHeight,
           errorBuilder: (context, error, stackTrace) {
             return errorWidget?.call(context) ?? _defaultError(context);
           },
@@ -46,10 +53,12 @@ class AppImage extends StatelessWidget {
       }
     }
 
-    // Otherwise load from network with caching
+    // Otherwise load from network with caching & memory bounds
     return CachedNetworkImage(
       imageUrl: trimmed,
       fit: fit,
+      memCacheWidth: memCacheWidth,
+      memCacheHeight: memCacheHeight,
       placeholder: (context, url) =>
           placeholder?.call(context) ?? _defaultPlaceholder(context),
       errorWidget: (context, url, error) =>

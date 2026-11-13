@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myalien/app/constants/app_strings.dart';
+import 'package:myalien/app/theme/app_tokens.dart';
 import 'package:myalien/app/widgets/app_section_header.dart';
 import 'package:myalien/discover/models/discovery_filters.dart';
 import 'package:myalien/home/cubit/home_cubit.dart';
@@ -102,6 +103,7 @@ class _DiscoveryFilterSheetState extends State<DiscoveryFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = AppColorTokens.of(context);
     final currentFilters = _buildCurrentFilters();
     final matchCount = HomeCubit.filterProfiles(
       widget.allProfiles,
@@ -112,9 +114,9 @@ class _DiscoveryFilterSheetState extends State<DiscoveryFilterSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: tokens.bgSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         children: [
@@ -124,7 +126,7 @@ class _DiscoveryFilterSheetState extends State<DiscoveryFilterSheet> {
             width: 44,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: tokens.borderLow,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -134,40 +136,40 @@ class _DiscoveryFilterSheetState extends State<DiscoveryFilterSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.tune_rounded,
-                  color: Color(0xFF6C4AB6),
+                  color: tokens.brandAccent,
                   size: 22,
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
                     AppStrings.discoveryPreferences,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E1E2D),
+                      color: tokens.textPrimary,
                     ),
                   ),
                 ),
                 TextButton(
                   onPressed: _resetToDefaults,
-                  child: const Text(
+                  child: Text(
                     AppStrings.reset,
                     style: TextStyle(
-                      color: Color(0xFF6C4AB6),
+                      color: tokens.brandAccent,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Colors.grey),
+                  icon: Icon(Icons.close, color: tokens.textMuted),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFE2DDF4)),
+          Divider(height: 1, color: tokens.borderLow),
 
           // Scrollable filter options
           Expanded(
@@ -575,20 +577,21 @@ class _DiscoveryFilterSheetState extends State<DiscoveryFilterSheet> {
     required bool selected,
     required VoidCallback onSelected,
   }) {
+    final tokens = AppColorTokens.of(context);
     return ChoiceChip(
       label: Text(label),
       selected: selected,
-      selectedColor: const Color(0xFF6C4AB6),
-      backgroundColor: const Color(0xFFF7F5FC),
+      selectedColor: tokens.brandAccent,
+      backgroundColor: tokens.brandAccentSubtle,
       labelStyle: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        color: selected ? Colors.white : const Color(0xFF1E1E2D),
+        color: selected ? Colors.white : tokens.textPrimary,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: selected ? const Color(0xFF6C4AB6) : const Color(0xFFE2DDF4),
+          color: selected ? tokens.brandAccent : tokens.borderLow,
         ),
       ),
       onSelected: (_) => onSelected(),
@@ -602,12 +605,13 @@ class _DiscoveryFilterSheetState extends State<DiscoveryFilterSheet> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final tokens = AppColorTokens.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F5FC),
+        color: tokens.bgSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2DDF4)),
+        border: Border.all(color: tokens.borderLow),
       ),
       child: Row(
         children: [
@@ -615,14 +619,14 @@ class _DiscoveryFilterSheetState extends State<DiscoveryFilterSheet> {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: value
-                  ? const Color(0xFF6C4AB6).withValues(alpha: 0.15)
-                  : Colors.grey.shade200,
+                  ? tokens.brandAccent.withValues(alpha: 0.15)
+                  : tokens.bgSubtle,
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
               size: 20,
-              color: value ? const Color(0xFF6C4AB6) : Colors.grey.shade600,
+              color: value ? tokens.brandAccent : tokens.textMuted,
             ),
           ),
           const SizedBox(width: 12),
@@ -632,17 +636,17 @@ class _DiscoveryFilterSheetState extends State<DiscoveryFilterSheet> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E1E2D),
+                    color: tokens.textPrimary,
                   ),
                 ),
                 Text(
                   subtitle,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey.shade600,
+                    color: tokens.textSecondary,
                   ),
                 ),
               ],
@@ -650,7 +654,7 @@ class _DiscoveryFilterSheetState extends State<DiscoveryFilterSheet> {
           ),
           Switch(
             value: value,
-            activeThumbColor: const Color(0xFF6C4AB6),
+            activeThumbColor: tokens.brandAccent,
             onChanged: onChanged,
           ),
         ],
