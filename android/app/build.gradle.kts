@@ -49,17 +49,20 @@ android {
 
     signingConfigs {
         create("release") {
-            if (System.getenv("ANDROID_KEYSTORE_PATH") != null) {
-                storeFile = file(System.getenv("ANDROID_KEYSTORE_PATH"))
+            val envKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+            if (!envKeystorePath.isNullOrBlank()) {
+                storeFile = file(envKeystorePath)
                 keyAlias = System.getenv("ANDROID_KEYSTORE_ALIAS")
                 keyPassword = System.getenv("ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD")
                 storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                
-            } else {
+            } else if (keystoreProperties["storeFile"] != null) {
                 keyAlias = keystoreProperties["keyAlias"] as String?
                 keyPassword = keystoreProperties["keyPassword"] as String?
                 storeFile = keystoreProperties["storeFile"]?.let { file(it) }
                 storePassword = keystoreProperties["storePassword"] as String?
+            } else {
+                // Fallback to debug signing config when no release keystore is provided (e.g. CI unsigned test builds)
+                initWith(getByName("debug"))
             }
         }
     }
