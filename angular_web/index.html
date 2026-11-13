@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" ng-app="datingApp">
+
+<head>
+    <meta charset="utf-8">
+    <title>Dating Web</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script src="app.js"></script>
+    <style>
+        /* basic reset */
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body ng-controller="MainCtrl as vm">
+    <h1>Welcome to the Dating App (AngularJS)</h1>
+    <!-- placeholder for views -->
+    <div ng-view></div>
+</body>
+
+</html>
