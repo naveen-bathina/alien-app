@@ -144,7 +144,7 @@ jobs:
           echo "image=$(echo "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Upload AAB as GitHub Workflow Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: app-${{ inputs.flavor || 'production' }}-release-aab
           path: ${{ steps.aab_path.outputs.file }}
